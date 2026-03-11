@@ -65,7 +65,7 @@ class KlarnaPlatformView: NSObject, FlutterPlatformView, KlarnaPaymentEventListe
     private func setupKlarnaPaymentView() {
         do {
             if let returnUrl = returnUrl {
-                paymentView = try KlarnaPaymentView(category: category, eventListener: self, returnURL: returnUrl)
+                paymentView = try KlarnaPaymentView(category: category, returnUrl: returnUrl, eventListener: self)
             } else {
                 paymentView = try KlarnaPaymentView(category: category, eventListener: self)
             }
@@ -97,21 +97,21 @@ class KlarnaPlatformView: NSObject, FlutterPlatformView, KlarnaPaymentEventListe
             initializeView(clientToken: clientToken, result: result)
         case "load":
             let args = call.arguments as? [String: Any]
-            let sessionData = args?["sessionData"] as? String
-            loadView(sessionData: sessionData, result: result)
+            let jsonData = args?["jsonData"] as? String
+            loadView(jsonData: jsonData, result: result)
         case "authorize":
             let args = call.arguments as? [String: Any]
-            let sessionData = args?["sessionData"] as? String
+            let jsonData = args?["jsonData"] as? String
             let autoFinalize = args?["autoFinalize"] as? Bool ?? true
-            authorizeView(autoFinalize: autoFinalize, sessionData: sessionData, result: result)
+            authorizeView(autoFinalize: autoFinalize, jsonData: jsonData, result: result)
         case "reauthorize":
             let args = call.arguments as? [String: Any]
-            let sessionData = args?["sessionData"] as? String
-            reauthorizeView(sessionData: sessionData, result: result)
+            let jsonData = args?["jsonData"] as? String
+            reauthorizeView(jsonData: jsonData, result: result)
         case "finalize":
             let args = call.arguments as? [String: Any]
-            let sessionData = args?["sessionData"] as? String
-            finalizeView(sessionData: sessionData, result: result)
+            let jsonData = args?["jsonData"] as? String
+            finalizeView(jsonData: jsonData, result: result)
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -126,39 +126,39 @@ class KlarnaPlatformView: NSObject, FlutterPlatformView, KlarnaPaymentEventListe
         result(nil)
     }
 
-    private func loadView(sessionData: String?, result: @escaping FlutterResult) {
+    private func loadView(jsonData: String?, result: @escaping FlutterResult) {
         guard let paymentView = paymentView else {
             result(FlutterError(code: "VIEW_NOT_INITIALIZED", message: "KlarnaPaymentView not initialized", details: nil))
             return
         }
-        paymentView.load(sessionData: sessionData)
+        paymentView.load(jsonData: jsonData)
         result(nil)
     }
 
-    private func authorizeView(autoFinalize: Bool, sessionData: String?, result: @escaping FlutterResult) {
+    private func authorizeView(autoFinalize: Bool, jsonData: String?, result: @escaping FlutterResult) {
         guard let paymentView = paymentView else {
             result(FlutterError(code: "VIEW_NOT_INITIALIZED", message: "KlarnaPaymentView not initialized", details: nil))
             return
         }
-        paymentView.authorize(autoFinalize: autoFinalize, sessionData: sessionData)
+        paymentView.authorize(autoFinalize: autoFinalize, jsonData: jsonData)
         result(nil)
     }
 
-    private func reauthorizeView(sessionData: String?, result: @escaping FlutterResult) {
+    private func reauthorizeView(jsonData: String?, result: @escaping FlutterResult) {
         guard let paymentView = paymentView else {
             result(FlutterError(code: "VIEW_NOT_INITIALIZED", message: "KlarnaPaymentView not initialized", details: nil))
             return
         }
-        paymentView.reauthorize(sessionData: sessionData)
+        paymentView.reauthorize(jsonData: jsonData)
         result(nil)
     }
 
-    private func finalizeView(sessionData: String?, result: @escaping FlutterResult) {
+    private func finalizeView(jsonData: String?, result: @escaping FlutterResult) {
         guard let paymentView = paymentView else {
             result(FlutterError(code: "VIEW_NOT_INITIALIZED", message: "KlarnaPaymentView not initialized", details: nil))
             return
         }
-        paymentView.finalize(sessionData: sessionData)
+        paymentView.finalise(jsonData: jsonData)
         result(nil)
     }
 
@@ -172,8 +172,8 @@ class KlarnaPlatformView: NSObject, FlutterPlatformView, KlarnaPaymentEventListe
         methodChannel.invokeMethod("onLoaded", arguments: nil)
     }
 
-    func klarnaLoadedPaymentReview(paymentView: KlarnaPaymentView, showForm: Bool) {
-        methodChannel.invokeMethod("onLoadPaymentReview", arguments: ["showForm": showForm])
+    func klarnaLoadedPaymentReview(paymentView: KlarnaPaymentView) {
+        methodChannel.invokeMethod("onLoadPaymentReview", arguments: ["showForm": true])
     }
 
     func klarnaAuthorized(paymentView: KlarnaPaymentView, approved: Bool, authToken: String?, finalizeRequired: Bool) {
