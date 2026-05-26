@@ -131,7 +131,7 @@ class KlarnaPlatformView: NSObject, FlutterPlatformView, KlarnaPaymentEventListe
             result(FlutterError(code: "VIEW_NOT_INITIALIZED", message: "KlarnaPaymentView not initialized", details: nil))
             return
         }
-        paymentView.load(jsonData: jsonData)
+        performLoad(on: paymentView, jsonData: jsonData)
         result(nil)
     }
 
@@ -140,7 +140,7 @@ class KlarnaPlatformView: NSObject, FlutterPlatformView, KlarnaPaymentEventListe
             result(FlutterError(code: "VIEW_NOT_INITIALIZED", message: "KlarnaPaymentView not initialized", details: nil))
             return
         }
-        paymentView.authorize(autoFinalize: autoFinalize, jsonData: jsonData)
+        performAuthorize(on: paymentView, autoFinalize: autoFinalize, jsonData: jsonData)
         result(nil)
     }
 
@@ -149,7 +149,7 @@ class KlarnaPlatformView: NSObject, FlutterPlatformView, KlarnaPaymentEventListe
             result(FlutterError(code: "VIEW_NOT_INITIALIZED", message: "KlarnaPaymentView not initialized", details: nil))
             return
         }
-        paymentView.reauthorize(jsonData: jsonData)
+        performReauthorize(on: paymentView, jsonData: jsonData)
         result(nil)
     }
 
@@ -158,8 +158,49 @@ class KlarnaPlatformView: NSObject, FlutterPlatformView, KlarnaPaymentEventListe
             result(FlutterError(code: "VIEW_NOT_INITIALIZED", message: "KlarnaPaymentView not initialized", details: nil))
             return
         }
-        paymentView.finalise(jsonData: jsonData)
+        performFinalise(on: paymentView, jsonData: jsonData)
         result(nil)
+    }
+
+    // MARK: - ObjC Runtime Bridge
+    // KlarnaMobileSDK 2.11.6 guards load/authorize/reauthorize/finalise behind
+    // #if $NonescapableTypes (Swift 5.9+). These helpers invoke the methods via
+    // ObjC runtime dispatch so the plugin compiles on any Swift version.
+
+    private func performLoad(on view: KlarnaPaymentView, jsonData: String?) {
+        let selector = NSSelectorFromString("loadWithJsonData:")
+        guard view.responds(to: selector) else { return }
+        let imp = view.method(for: selector)
+        typealias Method = @convention(c) (AnyObject, Selector, String?) -> Void
+        let method = unsafeBitCast(imp, to: Method.self)
+        method(view, selector, jsonData)
+    }
+
+    private func performAuthorize(on view: KlarnaPaymentView, autoFinalize: Bool, jsonData: String?) {
+        let selector = NSSelectorFromString("authorizeWithAutoFinalize:jsonData:")
+        guard view.responds(to: selector) else { return }
+        let imp = view.method(for: selector)
+        typealias Method = @convention(c) (AnyObject, Selector, Bool, String?) -> Void
+        let method = unsafeBitCast(imp, to: Method.self)
+        method(view, selector, autoFinalize, jsonData)
+    }
+
+    private func performReauthorize(on view: KlarnaPaymentView, jsonData: String?) {
+        let selector = NSSelectorFromString("reauthorizeWithJsonData:")
+        guard view.responds(to: selector) else { return }
+        let imp = view.method(for: selector)
+        typealias Method = @convention(c) (AnyObject, Selector, String?) -> Void
+        let method = unsafeBitCast(imp, to: Method.self)
+        method(view, selector, jsonData)
+    }
+
+    private func performFinalise(on view: KlarnaPaymentView, jsonData: String?) {
+        let selector = NSSelectorFromString("finaliseWithJsonData:")
+        guard view.responds(to: selector) else { return }
+        let imp = view.method(for: selector)
+        typealias Method = @convention(c) (AnyObject, Selector, String?) -> Void
+        let method = unsafeBitCast(imp, to: Method.self)
+        method(view, selector, jsonData)
     }
 
     // MARK: - KlarnaPaymentEventListener
